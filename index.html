@@ -7,13 +7,13 @@
 
 <style>
   body {
-    font-family: "Segoe UI", Arial;
+    font-family: "Segoe UI", Arial, sans-serif;
     background: #f5f6fa;
     padding: 20px;
     text-align: center;
   }
 
-  h2 { margin-bottom: 10px; }
+  h2 { margin-bottom: 10px; color: #333; }
 
   .container {
     max-width: 340px;
@@ -40,6 +40,7 @@
     border: 1px solid #ccc;
     height: 140px;
     overflow-y: scroll;
+    appearance: none; /* Remove default system styles */
   }
 
   /* display */
@@ -47,22 +48,32 @@
     font-size: 45px;
     font-weight: bold;
     margin: 20px 0;
+    color: #333;
   }
 
+  /* Button styles */
+  .btn-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
   button {
-    width: 30%;
+    flex: 1; /* Distribute space equally */
     padding: 12px;
     font-size: 15px;
     border-radius: 10px;
     border: none;
-    margin: 4px;
     color: white;
     cursor: pointer;
+    transition: background-color 0.3s;
   }
 
   .start { background:#28a745; }
-  .stop  { background:#d9181f; }
-  .reset { background:#444; }
+  .start:hover { background:#218838; }
+  .stop  { background:#ffc107; color: #333; } /* Changed stop to amber for "pause" look */
+  .stop:hover { background:#e0a800; }
+  .reset { background:#dc3545; } /* Changed reset to red */
+  .reset:hover { background:#c82333; }
 
 </style>
 </head>
@@ -86,9 +97,11 @@
 
   <div id="countdownDisplay">00:00</div>
 
-  <button class="start" onclick="startCountdown()">Start</button>
-  <button class="stop" onclick="stopCountdown()">Stop</button>
-  <button class="reset" onclick="resetCountdown()">Reset</button>
+  <div class="btn-group">
+    <button class="start" id="startButton" onclick="toggleCountdown()">Start</button>
+    <!-- The stop button is now gone, functionality merged into the start button -->
+    <button class="reset" onclick="resetCountdown()">Reset</button>
+  </div>
 
   <!-- alarm sound -->
   <audio id="alarmSound">
@@ -98,6 +111,8 @@
 
 <script>
 /* Fill wheel selector values */
+const minSel = document.getElementById('minSel');
+const secSel = document.getElementById('secSel');
 for (let i = 0; i <= 59; i++) {
   let m = document.createElement("option");
   m.value = i;
@@ -110,11 +125,16 @@ for (let i = 0; i <= 59; i++) {
   secSel.appendChild(s);
 }
 
-/* Countdown */
+/* Countdown Logic */
 let cdTimer = null;
 let cdRemaining = 0;
+let isRunning = false;
+const countdownDisplay = document.getElementById('countdownDisplay');
+const alarmSound = document.getElementById('alarmSound');
+const startButton = document.getElementById('startButton');
 
 function updateDisplay() {
+  // Use milliseconds directly for calculation
   let mins = Math.floor(cdRemaining / 60000);
   let secs = Math.floor((cdRemaining % 60000) / 1000);
 
@@ -122,45 +142,73 @@ function updateDisplay() {
     `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
-function startCountdown() {
-  if (cdTimer !== null) return;
-
-  let minutes = parseInt(minSel.value) || 0;
-  let seconds = parseInt(secSel.value) || 0;
-
-  cdRemaining = (minutes * 60 + seconds) * 1000;
-
-  if (cdRemaining <= 0) return;
+function startTimer() {
+  if (cdTimer !== null) return; // Already running
 
   cdTimer = setInterval(() => {
-    cdRemaining -= 200;
+    cdRemaining -= 1000; // Deduct exactly one second
 
     if (cdRemaining <= 0) {
       cdRemaining = 0;
       updateDisplay();
-      stopCountdown();
-
+      stopTimer();
       // Play alarm
       alarmSound.play();
-
       alert("⏰ Time's up!");
       return;
     }
 
     updateDisplay();
-  }, 200);
+  }, 1000); // Interval set to 1000ms (1 second) for better accuracy
+  
+  isRunning = true;
+  startButton.textContent = "Stop";
+  startButton.classList.remove('start');
+  startButton.classList.add('stop');
+  // Disable selectors when running
+  minSel.disabled = true;
+  secSel.disabled = true;
 }
 
-function stopCountdown() {
+function stopTimer() {
   clearInterval(cdTimer);
   cdTimer = null;
+  isRunning = false;
+  startButton.textContent = "Start";
+  startButton.classList.remove('stop');
+  startButton.classList.add('start');
+}
+
+function toggleCountdown() {
+    if (isRunning) {
+        // If running, pause it
+        stopTimer();
+    } else {
+        // If not running, check if we need to set a new time or resume
+        if (cdRemaining <= 0) {
+            // New timer logic (only when paused or reset to 0)
+            let minutes = parseInt(minSel.value) || 0;
+            let seconds = parseInt(secSel.value) || 0;
+            cdRemaining = (minutes * 60 + seconds) * 1000;
+        }
+
+        if (cdRemaining > 0) {
+            startTimer();
+        }
+    }
 }
 
 function resetCountdown() {
-  stopCountdown();
+  stopTimer();
   cdRemaining = 0;
   updateDisplay();
+  // Re-enable selectors
+  minSel.disabled = false;
+  secSel.disabled = false;
 }
+
+// Initialize display on load
+updateDisplay();
 </script>
 
 </body>
