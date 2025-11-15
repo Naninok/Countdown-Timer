@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Countdown Timer (Mobile Style)</title>
+
+<style>
+  body {
+    font-family: "Segoe UI", Arial;
+    background: #f5f6fa;
+    padding: 20px;
+    text-align: center;
+  }
+
+  h2 { margin-bottom: 10px; }
+
+  .container {
+    max-width: 340px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  }
+
+  /* wheel selector style */
+  .wheel-box {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 20px 0;
+  }
+
+  select {
+    font-size: 22px;
+    padding: 10px;
+    width: 90px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    height: 140px;
+    overflow-y: scroll;
+  }
+
+  /* display */
+  #countdownDisplay {
+    font-size: 45px;
+    font-weight: bold;
+    margin: 20px 0;
+  }
+
+  button {
+    width: 30%;
+    padding: 12px;
+    font-size: 15px;
+    border-radius: 10px;
+    border: none;
+    margin: 4px;
+    color: white;
+    cursor: pointer;
+  }
+
+  .start { background:#28a745; }
+  .stop  { background:#d9181f; }
+  .reset { background:#444; }
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>⏳ Countdown Timer</h2>
+
+  <!-- Wheel selectors -->
+  <div class="wheel-box">
+    <div>
+      <label>นาที</label><br>
+      <select id="minSel" size="6"></select>
+    </div>
+    <div>
+      <label>วินาที</label><br>
+      <select id="secSel" size="6"></select>
+    </div>
+  </div>
+
+  <div id="countdownDisplay">00:00</div>
+
+  <button class="start" onclick="startCountdown()">Start</button>
+  <button class="stop" onclick="stopCountdown()">Stop</button>
+  <button class="reset" onclick="resetCountdown()">Reset</button>
+
+  <!-- alarm sound -->
+  <audio id="alarmSound">
+    <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg">
+  </audio>
+</div>
+
+<script>
+/* Fill wheel selector values */
+for (let i = 0; i <= 59; i++) {
+  let m = document.createElement("option");
+  m.value = i;
+  m.text = String(i).padStart(2, "0");
+  minSel.appendChild(m);
+
+  let s = document.createElement("option");
+  s.value = i;
+  s.text = String(i).padStart(2, "0");
+  secSel.appendChild(s);
+}
+
+/* Countdown */
+let cdTimer = null;
+let cdRemaining = 0;
+
+function updateDisplay() {
+  let mins = Math.floor(cdRemaining / 60000);
+  let secs = Math.floor((cdRemaining % 60000) / 1000);
+
+  countdownDisplay.textContent =
+    `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+}
+
+function startCountdown() {
+  if (cdTimer !== null) return;
+
+  let minutes = parseInt(minSel.value) || 0;
+  let seconds = parseInt(secSel.value) || 0;
+
+  cdRemaining = (minutes * 60 + seconds) * 1000;
+
+  if (cdRemaining <= 0) return;
+
+  cdTimer = setInterval(() => {
+    cdRemaining -= 200;
+
+    if (cdRemaining <= 0) {
+      cdRemaining = 0;
+      updateDisplay();
+      stopCountdown();
+
+      // Play alarm
+      alarmSound.play();
+
+      alert("⏰ Time's up!");
+      return;
+    }
+
+    updateDisplay();
+  }, 200);
+}
+
+function stopCountdown() {
+  clearInterval(cdTimer);
+  cdTimer = null;
+}
+
+function resetCountdown() {
+  stopCountdown();
+  cdRemaining = 0;
+  updateDisplay();
+}
+</script>
+
+</body>
+</html>
