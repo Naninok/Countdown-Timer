@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Countdown Timer (Mobile Style)</title>
+<title>Countdown Timer (Wheel Only)</title>
 
 <style>
   body {
@@ -24,55 +24,71 @@
     box-shadow: 0 6px 20px rgba(0,0,0,0.1);
   }
 
-  /* wheel selector style */
+  /* wheel selector huge mobile style */
   .wheel-box {
     display: flex;
     justify-content: center;
-    gap: 15px;
-    margin: 20px 0;
+    gap: 20px;
+    margin: 25px 0;
+  }
+
+  .wheel-block {
+    text-align: center;
+  }
+
+  label {
+    font-size: 18px;
+    color: #444;
   }
 
   select {
-    font-size: 22px;
-    padding: 10px;
-    width: 90px;
-    border-radius: 10px;
-    border: 1px solid #ccc;
-    height: 140px;
+    font-size: 32px;
+    padding: 0;
+    width: 120px;
+    height: 220px;
+    border: none;
+    border-radius: 14px;
+    text-align: center;
     overflow-y: scroll;
-    appearance: none; /* Remove default system styles */
+    appearance: none;
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+
+    /* ให้ตัวเลือกอยู่กึ่งกลางเหมือน wheel */
+    scroll-snap-type: y mandatory;
   }
 
-  /* display */
-  #countdownDisplay {
-    font-size: 45px;
-    font-weight: bold;
-    margin: 20px 0;
-    color: #333;
+  select option {
+    font-size: 32px;
+    padding: 12px 0;
+    scroll-snap-align: center;
   }
 
-  /* Button styles */
+  /* ปุ่ม */
   .btn-group {
     display: flex;
     justify-content: center;
     gap: 10px;
   }
+
   button {
-    flex: 1; /* Distribute space equally */
+    flex: 1;
     padding: 12px;
     font-size: 15px;
     border-radius: 10px;
     border: none;
     color: white;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: 0.2s;
   }
 
   .start { background:#28a745; }
   .start:hover { background:#218838; }
-  .stop  { background:#ffc107; color: #333; } /* Changed stop to amber for "pause" look */
+
+  .stop { background:#ffc107; color:#333; }
   .stop:hover { background:#e0a800; }
-  .reset { background:#dc3545; } /* Changed reset to red */
+
+  .reset { background:#dc3545; }
   .reset:hover { background:#c82333; }
 
 </style>
@@ -85,21 +101,18 @@
 
   <!-- Wheel selectors -->
   <div class="wheel-box">
-    <div>
+    <div class="wheel-block">
       <label>นาที</label><br>
       <select id="minSel" size="6"></select>
     </div>
-    <div>
+    <div class="wheel-block">
       <label>วินาที</label><br>
       <select id="secSel" size="6"></select>
     </div>
   </div>
 
-  <div id="countdownDisplay">00:00</div>
-
   <div class="btn-group">
     <button class="start" id="startButton" onclick="toggleCountdown()">Start</button>
-    <!-- The stop button is now gone, functionality merged into the start button -->
     <button class="reset" onclick="resetCountdown()">Reset</button>
   </div>
 
@@ -129,43 +142,42 @@ for (let i = 0; i <= 59; i++) {
 let cdTimer = null;
 let cdRemaining = 0;
 let isRunning = false;
-const countdownDisplay = document.getElementById('countdownDisplay');
+
 const alarmSound = document.getElementById('alarmSound');
 const startButton = document.getElementById('startButton');
 
-function updateDisplay() {
-  // Use milliseconds directly for calculation
-  let mins = Math.floor(cdRemaining / 60000);
-  let secs = Math.floor((cdRemaining % 60000) / 1000);
+/* ใช้ wheel แสดงเวลาแทนตัวเลข */
+function updateWheel(ms) {
+  let mins = Math.floor(ms / 60000);
+  let secs = Math.floor((ms % 60000) / 1000);
 
-  countdownDisplay.textContent =
-    `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  minSel.value = mins;
+  secSel.value = secs;
 }
 
 function startTimer() {
-  if (cdTimer !== null) return; // Already running
+  if (cdTimer !== null) return;
 
   cdTimer = setInterval(() => {
-    cdRemaining -= 1000; // Deduct exactly one second
+    cdRemaining -= 1000;
 
     if (cdRemaining <= 0) {
       cdRemaining = 0;
-      updateDisplay();
+      updateWheel(cdRemaining);
       stopTimer();
-      // Play alarm
       alarmSound.play();
       alert("⏰ Time's up!");
       return;
     }
 
-    updateDisplay();
-  }, 1000); // Interval set to 1000ms (1 second) for better accuracy
-  
+    updateWheel(cdRemaining);
+  }, 1000);
+
   isRunning = true;
   startButton.textContent = "Stop";
-  startButton.classList.remove('start');
-  startButton.classList.add('stop');
-  // Disable selectors when running
+  startButton.classList.remove("start");
+  startButton.classList.add("stop");
+
   minSel.disabled = true;
   secSel.disabled = true;
 }
@@ -173,42 +185,40 @@ function startTimer() {
 function stopTimer() {
   clearInterval(cdTimer);
   cdTimer = null;
+
   isRunning = false;
   startButton.textContent = "Start";
-  startButton.classList.remove('stop');
-  startButton.classList.add('start');
+  startButton.classList.remove("stop");
+  startButton.classList.add("start");
 }
 
 function toggleCountdown() {
-    if (isRunning) {
-        // If running, pause it
-        stopTimer();
-    } else {
-        // If not running, check if we need to set a new time or resume
-        if (cdRemaining <= 0) {
-            // New timer logic (only when paused or reset to 0)
-            let minutes = parseInt(minSel.value) || 0;
-            let seconds = parseInt(secSel.value) || 0;
-            cdRemaining = (minutes * 60 + seconds) * 1000;
-        }
-
-        if (cdRemaining > 0) {
-            startTimer();
-        }
+  if (isRunning) {
+    stopTimer();
+  } else {
+    if (cdRemaining <= 0) {
+      let minutes = parseInt(minSel.value) || 0;
+      let seconds = parseInt(secSel.value) || 0;
+      cdRemaining = (minutes * 60 + seconds) * 1000;
     }
+
+    if (cdRemaining > 0) {
+      startTimer();
+    }
+  }
 }
 
 function resetCountdown() {
   stopTimer();
   cdRemaining = 0;
-  updateDisplay();
-  // Re-enable selectors
+  updateWheel(0);
+
   minSel.disabled = false;
   secSel.disabled = false;
 }
 
-// Initialize display on load
-updateDisplay();
+/* Initialize on load */
+updateWheel(0);
 </script>
 
 </body>
