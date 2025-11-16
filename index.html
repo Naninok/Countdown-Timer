@@ -3,72 +3,80 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Countdown Timer (Wheel Only)</title>
+
+<title>Dark Wheel Countdown (Enhanced)</title>
 
 <style>
   body {
+    background: #0e0e0f;
     font-family: "Segoe UI", Arial, sans-serif;
-    background: #f5f6fa;
+    color: #fff;
     padding: 20px;
     text-align: center;
   }
 
-  h2 { margin-bottom: 10px; color: #333; }
-
   .container {
-    max-width: 340px;
+    max-width: 350px;
     margin: auto;
-    background: white;
+    background: #1a1a1d;
     padding: 20px;
-    border-radius: 16px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    border-radius: 18px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.6);
   }
 
-  /* wheel selector huge mobile style */
+  h2 { font-weight: 500; }
+
+  /* WHEEL */
   .wheel-box {
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 25px;
     margin: 25px 0;
   }
 
-  .wheel-block {
-    text-align: center;
-  }
-
-  label {
-    font-size: 18px;
-    color: #444;
-  }
-
-  select {
-    font-size: 32px;
-    padding: 0;
+  .wheel {
     width: 120px;
     height: 220px;
-    border: none;
+    overflow: hidden;
+    position: relative;
     border-radius: 14px;
-    text-align: center;
-    overflow-y: scroll;
-    appearance: none;
-    background: #fff;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-
-    /* ให้ตัวเลือกอยู่กึ่งกลางเหมือน wheel */
-    scroll-snap-type: y mandatory;
+    background: #111;
+    box-shadow: 0 0 25px rgba(255,255,255,0.05) inset;
+    touch-action: pan-y;
   }
 
-  select option {
+  .wheel ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    transition: transform 0.25s ease-out;
+  }
+
+  .wheel li {
     font-size: 32px;
-    padding: 12px 0;
-    scroll-snap-align: center;
+    padding: 14px 0;
+    color: #fff;
+    text-align: center;
   }
 
-  /* ปุ่ม */
-  .btn-group {
+  .highlight {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 44px;
+    transform: translateY(-50%);
+    border-top: 2px solid #555;
+    border-bottom: 2px solid #555;
+    pointer-events: none;
+  }
+
+  /* buttons */
+  .btn-group, .addtime {
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
+    margin-top: 12px;
   }
 
   button {
@@ -77,148 +85,230 @@
     font-size: 15px;
     border-radius: 10px;
     border: none;
-    color: white;
     cursor: pointer;
-    transition: 0.2s;
+    transition: 0.15s;
   }
 
   .start { background:#28a745; }
-  .start:hover { background:#218838; }
-
-  .stop { background:#ffc107; color:#333; }
-  .stop:hover { background:#e0a800; }
-
+  .stop  { background:#ffc107; color:#000; }
   .reset { background:#dc3545; }
-  .reset:hover { background:#c82333; }
 
+  .add-btn { background:#444; }
+
+  select {
+    margin-top: 18px;
+    padding: 10px;
+    font-size: 15px;
+    border-radius: 10px;
+    border: none;
+    background: #333;
+    color: #fff;
+  }
 </style>
 </head>
 
 <body>
 
 <div class="container">
-  <h2>⏳ Countdown Timer</h2>
 
-  <!-- Wheel selectors -->
+  <h2>⏳ Dark Wheel Countdown</h2>
+
+  <!-- Wheels -->
   <div class="wheel-box">
-    <div class="wheel-block">
-      <label>นาที</label><br>
-      <select id="minSel" size="6"></select>
+    <div class="wheel" id="minWheel">
+      <div class="highlight"></div>
+      <ul></ul>
     </div>
-    <div class="wheel-block">
-      <label>วินาที</label><br>
-      <select id="secSel" size="6"></select>
+
+    <div class="wheel" id="secWheel">
+      <div class="highlight"></div>
+      <ul></ul>
     </div>
   </div>
 
+  <!-- Control -->
   <div class="btn-group">
-    <button class="start" id="startButton" onclick="toggleCountdown()">Start</button>
+    <button id="startButton" class="start" onclick="toggle()">Start</button>
     <button class="reset" onclick="resetCountdown()">Reset</button>
   </div>
 
-  <!-- alarm sound -->
-  <audio id="alarmSound">
-    <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg">
-  </audio>
+  <!-- Add time -->
+  <div class="addtime">
+    <button class="add-btn" onclick="addTime(60)">+1 นาที</button>
+    <button class="add-btn" onclick="addTime(10)">+10 วินาที</button>
+  </div>
+
+  <!-- Choose sound -->
+  <div style="margin-top:18px;">
+    <label>🔊 เสียงเตือน:</label><br>
+    <select id="soundSelect">
+      <option value="alarm1">⏰ Alarm 1</option>
+      <option value="alarm2">🚨 Alarm 2</option>
+      <option value="alarm3">🔔 Bell</option>
+    </select>
+  </div>
+
+  <audio id="alarm1" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
+  <audio id="alarm2" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+  <audio id="alarm3" src="https://actions.google.com/sounds/v1/bells/dry_bell.ogg"></audio>
+
 </div>
 
 <script>
-/* Fill wheel selector values */
-const minSel = document.getElementById('minSel');
-const secSel = document.getElementById('secSel');
-for (let i = 0; i <= 59; i++) {
-  let m = document.createElement("option");
-  m.value = i;
-  m.text = String(i).padStart(2, "0");
-  minSel.appendChild(m);
+/* Create wheel with infinite looping */
+function createWheel(wheelEl) {
+  const ul = wheelEl.querySelector("ul");
+  for (let i=-2; i<=61; i++) {
+    let n = (i+60) % 60;
+    const li = document.createElement("li");
+    li.textContent = String(n).padStart(2,"0");
+    li.dataset.value = n;
+    ul.appendChild(li);
+  }
+  wheelEl.ul = ul;
+  wheelEl.offset = -2;
+  wheelEl.value = 0;
 
-  let s = document.createElement("option");
-  s.value = i;
-  s.text = String(i).padStart(2, "0");
-  secSel.appendChild(s);
+  /* Auto snap center on release */
+  let startY = 0;
+  let lastY = 0;
+
+  wheelEl.addEventListener("touchstart", e=>{
+    wheelEl.ul.style.transition = "none";
+    startY = lastY = e.touches[0].clientY;
+  });
+
+  wheelEl.addEventListener("touchmove", e=>{
+    const y = e.touches[0].clientY;
+    const delta = y - lastY;
+    lastY = y;
+
+    const current = getTranslateY(wheelEl.ul);
+    wheelEl.ul.style.transform = `translateY(${current + delta}px)`;
+  });
+
+  wheelEl.addEventListener("touchend", ()=>{
+    wheelEl.ul.style.transition = "transform 0.25s ease-out";
+    snapToNearest(wheelEl);
+  });
 }
 
-/* Countdown Logic */
-let cdTimer = null;
+function getTranslateY(el){
+  const st = window.getComputedStyle(el).transform;
+  if (st === "none") return 0;
+  const matrix = new DOMMatrix(st);
+  return matrix.m42;
+}
+
+function snapToNearest(wheel){
+  const pos = getTranslateY(wheel.ul);
+  let index = Math.round(-pos / 44);
+  if (index < 0) index = 0;
+  if (index > 62) index = 62;
+
+  wheel.value = (index + wheel.offset + 60) % 60;
+  const newPos = -index * 44;
+  wheel.ul.style.transform = `translateY(${newPos}px)`;
+}
+
+/* Initialization */
+const minWheel = document.getElementById("minWheel");
+const secWheel = document.getElementById("secWheel");
+createWheel(minWheel);
+createWheel(secWheel);
+
+function scrollToValue(wheel, val){
+  wheel.value = val;
+  const index = (val - wheel.offset + 60) % 60;
+  wheel.ul.style.transition = "transform 0.25s ease-out";
+  wheel.ul.style.transform = `translateY(${-index * 44}px)`;
+}
+
+scrollToValue(minWheel, 0);
+scrollToValue(secWheel, 0);
+
+/* Countdown logic */
 let cdRemaining = 0;
-let isRunning = false;
+let timer = null;
+let running = false;
 
-const alarmSound = document.getElementById('alarmSound');
-const startButton = document.getElementById('startButton');
+function playSound(){
+  const id = document.getElementById("soundSelect").value;
+  document.getElementById(id).play();
 
-/* ใช้ wheel แสดงเวลาแทนตัวเลข */
-function updateWheel(ms) {
-  let mins = Math.floor(ms / 60000);
-  let secs = Math.floor((ms % 60000) / 1000);
-
-  minSel.value = mins;
-  secSel.value = secs;
+  // Vibrate mobile
+  if (navigator.vibrate) navigator.vibrate([300,150,300]);
 }
 
-function startTimer() {
-  if (cdTimer !== null) return;
+function start(){
+  if (timer) return;
 
-  cdTimer = setInterval(() => {
+  timer = setInterval(()=>{
     cdRemaining -= 1000;
 
-    if (cdRemaining <= 0) {
+    if (cdRemaining <= 0){
       cdRemaining = 0;
-      updateWheel(cdRemaining);
-      stopTimer();
-      alarmSound.play();
+      scrollToValue(minWheel, 0);
+      scrollToValue(secWheel, 0);
+
+      stop();
+      playSound();
       alert("⏰ Time's up!");
       return;
     }
 
-    updateWheel(cdRemaining);
+    const m = Math.floor(cdRemaining/60000);
+    const s = Math.floor((cdRemaining%60000)/1000);
+
+    scrollToValue(minWheel, m);
+    scrollToValue(secWheel, s);
   }, 1000);
 
-  isRunning = true;
-  startButton.textContent = "Stop";
-  startButton.classList.remove("start");
-  startButton.classList.add("stop");
-
-  minSel.disabled = true;
-  secSel.disabled = true;
+  running = true;
+  const b = document.getElementById("startButton");
+  b.textContent = "Stop";
+  b.classList.remove("start");
+  b.classList.add("stop");
 }
 
-function stopTimer() {
-  clearInterval(cdTimer);
-  cdTimer = null;
+function stop(){
+  clearInterval(timer);
+  timer = null;
+  running = false;
 
-  isRunning = false;
-  startButton.textContent = "Start";
-  startButton.classList.remove("stop");
-  startButton.classList.add("start");
+  const b = document.getElementById("startButton");
+  b.textContent = "Start";
+  b.classList.remove("stop");
+  b.classList.add("start");
 }
 
-function toggleCountdown() {
-  if (isRunning) {
-    stopTimer();
-  } else {
-    if (cdRemaining <= 0) {
-      let minutes = parseInt(minSel.value) || 0;
-      let seconds = parseInt(secSel.value) || 0;
-      cdRemaining = (minutes * 60 + seconds) * 1000;
+function toggle(){
+  if (running) stop();
+  else {
+    if (cdRemaining <= 0){
+      cdRemaining = (minWheel.value*60 + secWheel.value)*1000;
     }
-
-    if (cdRemaining > 0) {
-      startTimer();
-    }
+    if (cdRemaining > 0) start();
   }
 }
 
-function resetCountdown() {
-  stopTimer();
+function resetCountdown(){
+  stop();
   cdRemaining = 0;
-  updateWheel(0);
-
-  minSel.disabled = false;
-  secSel.disabled = false;
+  scrollToValue(minWheel, 0);
+  scrollToValue(secWheel, 0);
 }
 
-/* Initialize on load */
-updateWheel(0);
+/* Add time buttons */
+function addTime(sec){
+  cdRemaining += sec * 1000;
+
+  let m = Math.floor(cdRemaining/60000);
+  let s = Math.floor((cdRemaining%60000)/1000);
+
+  scrollToValue(minWheel, m%60);
+  scrollToValue(secWheel, s%60);
+}
 </script>
 
 </body>
