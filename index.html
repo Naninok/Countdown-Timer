@@ -1,7 +1,188 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Countdown Timer (Enhanced)</title>
+
+<style>
+  :root{
+    --bg-1: #0b1020;
+    --bg-2: #0f1724;
+    --card: rgba(255,255,255,0.03);
+    --glass: rgba(255,255,255,0.04);
+    --accent: linear-gradient(135deg,#5eead4 0%, #60a5fa 100%);
+    --item-h: 48px;
+    --shadow: 0 12px 40px rgba(0,0,0,0.6);
+  }
+  html,body{height:100%;margin:0}
+  body{
+    font-family: "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 10% 10%, rgba(96,165,250,0.08), transparent),
+                linear-gradient(180deg,var(--bg-1) 0%, var(--bg-2) 100%);
+    color:#fff;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+
+  .card{
+    width:100%;
+    max-width:380px;
+    border-radius:20px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    box-shadow: var(--shadow);
+    padding:18px;
+    backdrop-filter: blur(8px) saturate(120%);
+    border: 1px solid rgba(255,255,255,0.03);
+  }
+
+ 
+  }
+  h1{font-size:18px;margin:0;font-weight:600}
+  p.sub{margin:0;color:rgba(255,255,255,0.6);font-size:13px}
+
+  .wheel-row{display:flex;gap:20px;justify-content:center;margin:18px 0}
+  .wheel{
+    width:132px;
+    height: calc(var(--item-h) * 5 + 8px);
+    border-radius:14px;
+    overflow: hidden; /* hide scroll bars */
+    position:relative;
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));
+    box-shadow: inset 0 2px 6px rgba(255,255,255,0.02);
+    touch-action: pan-y;
+  }
+
+  .wheel ul{
+    list-style:none;margin:0;padding:8px 0;
+    transform: translateY(0px);
+    transition: transform 280ms cubic-bezier(.22,.9,.19,1);
+    will-change: transform;
+  }
+
+  .wheel li{
+    height: var(--item-h);
+    line-height: var(--item-h);
+    text-align:center;
+    font-size:28px;
+    font-weight:600;
+    color: #fff;
+    user-select:none;
+  }
+
+  /* center highlight */
+  .highlight{
+    position:absolute;left:0;right:0;height:var(--item-h);
+    top:50%;transform:translateY(-50%);
+    border-top:1px solid rgba(255,255,255,0.06);
+    border-bottom:1px solid rgba(255,255,255,0.04);
+    pointer-events:none;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.45) inset;
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.03));
+  }
+
+  .controls{display:flex;gap:12px;margin-top:10px}
+  .controls button{
+    flex:1;padding:12px;border-radius:12px;border:none;cursor:pointer;
+    font-weight:700;font-size:15px;
+  }
+  .start{background:linear-gradient(90deg,#34d399,#10b981);color:#021;box-shadow:0 6px 18px rgba(16,185,129,0.12)}
+  .stop{background:linear-gradient(90deg,#fbbf24,#f97316);color:#111}
+  .reset{background:linear-gradient(90deg,#fb7185,#ef4444);color:#111}
+
+  .add-row{display:flex;gap:10px;margin-top:12px}
+  .add-row button{flex:1;padding:10px;border-radius:10px;border:none;background:#111;color:#fff}
+
+  .sound-select{margin-top:12px;display:flex;align-items:center;gap:8px}
+  select{background:#0b1220;border:none;padding:8px 10px;border-radius:10px;color:#fff}
+
+  /* tiny accessibility hint */
+  .hint{font-size:12px;color:rgba(255,255,255,0.5);margin-top:8px;text-align:center}
+
+  /* responsive */
+  @media (max-width:420px){
+    .wheel{width:120px}
+    .wheel li{font-size:26px}
+  }
+</style>
+</head>
+<body>
+
+<div class="card" role="application" aria-label="Countdown Timer">
+  <header>
+    <div class="logo-dot"></div>
+    <div>
+      <h1>Countdown Timer</h1>
+      <p class="sub"></p>
+    </div>
+  </header>
+
+  <div class="wheel-row" aria-hidden="false">
+    <div class="wheel" id="minWheel" aria-label="นาที">
+      <div class="highlight"></div>
+      <ul></ul>
+    </div>
+
+    <div class="wheel" id="secWheel" aria-label="วินาที">
+      <div class="highlight"></div>
+      <ul></ul>
+    </div>
+  </div>
+
+  <div class="controls" role="group" aria-label="controls">
+    <button id="startBtn" class="start" onclick="toggle()">Start</button>
+    <button class="reset" onclick="resetAll()">Reset</button>
+  </div>
+
+  <div class="add-row">
+    <button onclick="addTime(60)">+1 นาที</button>
+    <button onclick="addTime(10)">+10 วินาที</button>
+  </div>
+
+  <div class="sound-select">
+    <label style="font-size:14px;color:rgba(255,255,255,0.8)">เสียงเตือน</label>
+    <select id="alarmChoice" aria-label="เลือกเสียงแจ้งเตือน">
+      <option value="alarm1">Alarm 1</option>
+      <option value="alarm2">Alarm 2</option>
+      <option value="bell">Bell</option>
+    </select>
+  </div>
+
+  <p class="hint">ปัดขึ้น/ลงเพื่อเปลี่ยนค่า • กด Start เพื่อเริ่มนับ</p>
+</div>
+
+<!-- audio sources -->
+<audio id="tickAudio" preload="auto">
+  <source src="https://actions.google.com/sounds/v1/foley/metal_click.ogg" type="audio/ogg">
+</audio>
+
+<audio id="alarm1" preload="auto" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
+<audio id="alarm2" preload="auto" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+<audio id="bell"   preload="auto" src="https://actions.google.com/sounds/v1/bells/dry_bell.ogg"></audio>
+
+<script>
+/* =========================
+   Config & constants
+   ========================= */
+const ITEM_H = 48;                // matches CSS --item-h
+const VISIBLE_COUNT = 5;          // visual items (center + 2 above/below)
+const REPEAT = 3;                 // repeat 0..59 three times for infinite feel
+const COUNT = 60;
+const CENTER_BLOCK = COUNT;       // start index of middle repetition
+const SNAP_EASE = 'cubic-bezier(.22,.9,.19,1)';
+const TICK_THROTTLE_MS = 60;      // play tick at most every X ms during inertia
+
+/* =========================
+   Create wheels (three cycles)
+   ========================= */
 function makeWheel(wheelEl){
   const ul = wheelEl.querySelector('ul');
   ul.innerHTML = '';
-
+  // repeat 0..59 three times
   for (let rep = 0; rep < REPEAT; rep++){
     for(let i=0;i<COUNT;i++){
       const li = document.createElement('li');
@@ -10,16 +191,301 @@ function makeWheel(wheelEl){
       ul.appendChild(li);
     }
   }
-
   wheelEl.ul = ul;
-  wheelEl.index = CENTER_BLOCK; 
-  wheelEl.value = 0;
-
-  // position 0 at the center immediately
-  ul.style.transition = 'none';
-  setTranslateY(ul, -(wheelEl.index * ITEM_H));
-
-  requestAnimationFrame(()=>{
-      ul.style.transition = `transform 260ms ${SNAP_EASE}`;
-  });
+  wheelEl.index = CENTER_BLOCK; // index in the full list (0..(COUNT*REPEAT-1))
+  wheelEl.value = 0;            // 0..59
+  setTranslateY(wheelEl.ul, -(wheelEl.index * ITEM_H));
 }
+
+/* set transform translateY (px) */
+function setTranslateY(el, y){
+  el.style.transform = `translateY(${y}px)`;
+}
+
+/* read current translateY */
+function getTranslateY(el){
+  const st = window.getComputedStyle(el).transform;
+  if (st === 'none') return 0;
+  const m = new DOMMatrixReadOnly(st);
+  return m.m42;
+}
+
+/* scroll to a value (0..59) by moving to center block + val */
+function scrollToValue(wheel, val, animate=true){
+  wheel.value = ((val % COUNT) + COUNT) % COUNT;
+  const targetIndex = CENTER_BLOCK + wheel.value;
+  const y = -targetIndex * ITEM_H;
+  if (!animate){
+    wheel.ul.style.transition = 'none';
+    setTranslateY(wheel.ul, y);
+    // ensure subsequent transitions use desired easing
+    requestAnimationFrame(()=> wheel.ul.style.transition = `transform 260ms ${SNAP_EASE}`);
+  } else {
+    wheel.ul.style.transition = `transform 260ms ${SNAP_EASE}`;
+    setTranslateY(wheel.ul, y);
+  }
+}
+
+/* calculate nearest item index for snap given current translateY */
+function nearestIndexFromY(y){
+  // y is negative mostly. index = round(-y / ITEM_H)
+  return Math.round(-y / ITEM_H);
+}
+
+/* =========================
+   Touch / inertia + snapping
+   ========================= */
+function attachPickerBehavior(wheel){
+  let ul = wheel.ul;
+  let startY = 0;
+  let startTranslate = 0;
+  let lastY = 0;
+  let lastTime = 0;
+  let velocity = 0;
+  let ticking = false;
+  let lastTickPlay = 0;
+
+  function onTouchStart(e){
+    if (e.touches) {
+      startY = lastY = e.touches[0].clientY;
+    } else {
+      startY = lastY = e.clientY;
+      document.addEventListener('mousemove', onTouchMove);
+      document.addEventListener('mouseup', onTouchEnd);
+    }
+    startTranslate = getTranslateY(ul);
+    ul.style.transition = 'none';
+    lastTime = performance.now();
+    velocity = 0;
+  }
+
+  function onTouchMove(e){
+    e.preventDefault();
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    const dy = y - lastY;
+    lastY = y;
+    const now = performance.now();
+    const dt = Math.max(1, now - lastTime);
+    velocity = ( (dy) / dt ) * 16.6667; // normalized px per frame
+    lastTime = now;
+    const cur = getTranslateY(ul);
+    const next = cur + dy;
+    setTranslateY(ul, next);
+
+    // play tick when crossing items (throttled)
+    const idx = nearestIndexFromY(next);
+    const lastPlayDelta = now - lastTickPlay;
+    if (lastPlayDelta > TICK_THROTTLE_MS){
+      tick();
+      lastTickPlay = now;
+    }
+  }
+
+  function onTouchEnd(e){
+    // remove mouse handlers if used
+    if (!e.touches) {
+      document.removeEventListener('mousemove', onTouchMove);
+      document.removeEventListener('mouseup', onTouchEnd);
+    }
+    // apply momentum
+    const now = performance.now();
+    // velocity (px/frame) already computed
+    let v = velocity * 1.8; // tune multiplier for feel
+    const friction = 0.95;
+    const step = () => {
+      let cur = getTranslateY(ul);
+      // apply velocity
+      cur += v;
+      setTranslateY(ul, cur);
+      // decay
+      v *= friction;
+      // stop if slow
+      if (Math.abs(v) > 0.5){
+        requestAnimationFrame(step);
+      } else {
+        // snap to nearest
+        const finalIdx = nearestIndexFromY(getTranslateY(ul));
+        // keep finalIdx in middle repetition region
+        const middleBase = CENTER_BLOCK;
+        // Convert finalIdx to a digital value 0..59
+        let val = ((finalIdx % COUNT) + COUNT) % COUNT;
+        // move to middle repetition with that val
+        scrollToValue(wheel, val, true);
+        // play final tick
+        tick();
+      }
+    };
+    requestAnimationFrame(step);
+  }
+
+  // pointer events to support mouse and touch
+  ul.addEventListener('touchstart', onTouchStart, {passive:false});
+  ul.addEventListener('touchmove', onTouchMove, {passive:false});
+  ul.addEventListener('touchend', onTouchEnd);
+  ul.addEventListener('mousedown', onTouchStart);
+}
+
+/* =========================
+   Tick sound (throttled)
+   ========================= */
+const tickAudio = document.getElementById('tickAudio');
+function tick(){
+  // small restart if already playing
+  try{
+    tickAudio.currentTime = 0;
+    tickAudio.play().catch(()=>{/*ignore autoplay block*/});
+  }catch(e){}
+}
+
+/* =========================
+   Setup wheels and behavior
+   ========================= */
+const minWheel = document.getElementById('minWheel');
+const secWheel = document.getElementById('secWheel');
+
+makeWheel(minWheel);
+makeWheel(secWheel);
+
+attachPickerBehavior(minWheel);
+attachPickerBehavior(secWheel);
+
+/* ensure center initial position */
+scrollToValue(minWheel, 0, false);
+scrollToValue(secWheel, 0, false);
+
+/* also allow programmatic scroll (used by timer) */
+function getWheelValue(wheel){
+  // return 0..59 from wheel.value
+  return wheel.value;
+}
+
+/* =========================
+   Countdown logic
+   ========================= */
+let remainingMs = 0;
+let intervalId = null;
+
+function readWheelsToMs(){
+  const m = minWheel.value || 0;
+  const s = secWheel.value || 0;
+  return (m*60 + s) * 1000;
+}
+
+function updateWheelsFromMs(ms){
+  const m = Math.floor(ms/60000) % COUNT;
+  const s = Math.floor((ms%60000)/1000) % COUNT;
+  scrollToValue(minWheel, m, true);
+  scrollToValue(secWheel, s, true);
+  // play tick for visible change
+  tick();
+}
+
+function startTimer(){
+  if (intervalId) return;
+  intervalId = setInterval(()=>{
+    remainingMs -= 1000;
+    if (remainingMs <= 0){
+      remainingMs = 0;
+      stopTimer();
+      updateWheelsFromMs(0);
+      playAlarmAndVibrate();
+      setTimeout(()=> alert("⏰ หมดเวลา!"), 120);
+      return;
+    }
+    updateWheelsFromMs(remainingMs);
+  }, 1000);
+  document.getElementById('startBtn').textContent = 'Stop';
+  document.getElementById('startBtn').classList.remove('start');
+  document.getElementById('startBtn').classList.add('stop');
+}
+
+function stopTimer(){
+  if (intervalId) clearInterval(intervalId);
+  intervalId = null;
+  document.getElementById('startBtn').textContent = 'Start';
+  document.getElementById('startBtn').classList.remove('stop');
+  document.getElementById('startBtn').classList.add('start');
+}
+
+function toggle(){
+  if (intervalId){
+    stopTimer();
+  } else {
+    if (remainingMs <= 0){
+      remainingMs = readWheelsToMs();
+    }
+    if (remainingMs > 0) startTimer();
+  }
+}
+
+function resetAll(){
+  stopTimer();
+  remainingMs = 0;
+  scrollToValue(minWheel, 0, true);
+  scrollToValue(secWheel, 0, true);
+}
+
+/* play alarm + vibrate */
+function playAlarmAndVibrate(){
+  const choice = document.getElementById('alarmChoice').value;
+  const el = document.getElementById(choice);
+  if (el){
+    try{ el.currentTime = 0; el.play().catch(()=>{}); } catch(e){}
+  }
+  if (navigator.vibrate){
+    navigator.vibrate([300,150,300]);
+  }
+}
+
+/* add time buttons */
+function addTime(sec){
+  remainingMs += sec * 1000;
+  if (remainingMs < 0) remainingMs = 0;
+  updateWheelsFromMs(remainingMs);
+}
+
+/* Update wheel.value after transition ends (keeping middle repetition logic) */
+[minWheel, secWheel].forEach(wheel => {
+  wheel.ul.addEventListener('transitionend', ()=> {
+    // compute current index from translate
+    const curY = getTranslateY(wheel.ul);
+    let idx = nearestIndexFromY(curY);
+    // ensure idx sits within middle repetition (CENTER_BLOCK..CENTER_BLOCK+59)
+    // determine corresponding value
+    const val = ((idx % COUNT) + COUNT) % COUNT;
+    // move to exact middle repetition index for that value
+    const centerIdx = CENTER_BLOCK + val;
+    wheel.index = centerIdx;
+    wheel.value = val;
+    // set transform to exact center position (without animation)
+    wheel.ul.style.transition = 'none';
+    setTranslateY(wheel.ul, -centerIdx * ITEM_H);
+    requestAnimationFrame(()=> wheel.ul.style.transition = `transform 260ms ${SNAP_EASE}`);
+  });
+});
+
+/* init tick audio small unlock on first touch for autoplay policies */
+function unlockAudio(){
+  tickAudio.play().then(()=> tickAudio.pause()).catch(()=>{});
+  document.removeEventListener('touchstart', unlockAudio);
+}
+document.addEventListener('touchstart', unlockAudio, {passive:true});
+
+/* Accessibility: keyboard support */
+document.addEventListener('keydown', (e)=>{
+  if (e.key === 'ArrowUp' || e.key === 'ArrowRight'){
+    // increment seconds
+    const newS = (secWheel.value + 1) % 60;
+    scrollToValue(secWheel, newS, true);
+    tick();
+  } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft'){
+    const newS = (secWheel.value - 1 + 60) % 60;
+    scrollToValue(secWheel, newS, true);
+    tick();
+  } else if (e.key === ' '){
+    e.preventDefault(); toggle();
+  }
+});
+</script>
+</body>
+</html>
